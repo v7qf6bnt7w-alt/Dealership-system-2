@@ -1,0 +1,22 @@
+{
+  "name": "meridian-realtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Meridian DMS realtime hub: Socket.IO push, WhatsApp Cloud API outbound queue and webhook bridge",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  }
+}

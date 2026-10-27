@@ -84,6 +84,9 @@ def book_test_drive(body: BookingIn, db: DB, user: CustomerUser):
     v = fetch_one(db, "SELECT id, year, make, model, status FROM vehicles WHERE id = ? AND is_published = 1", (body.vehicle_id,))
     if not v or v["status"] == "sold":
         raise HTTPException(404, "Vehicle unavailable")
+    if fetch_one(db, """SELECT id FROM test_drives WHERE vehicle_id = ? AND status IN ('requested','confirmed')
+                        AND abs(julianday(scheduled_at) - julianday(?)) * 1440 < 30""", (body.vehicle_id, body.scheduled_at)):
+        raise HTTPException(409, "That time slot is already taken — please pick another time")
     title = f"{v['year']} {v['make']} {v['model']}"
     lead = fetch_one(db, "SELECT * FROM leads WHERE customer_id = ? AND stage NOT IN ('won','lost') ORDER BY updated_at DESC LIMIT 1", (cid,))
     if not lead:

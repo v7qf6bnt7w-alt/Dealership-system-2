@@ -209,7 +209,7 @@ def _lead(db, lead_id: int) -> dict:
 
 @router.get("/leads")
 def list_leads(db: DB, user: SalesUser, mine: bool = False, include_closed_days: int = 30):
-    where, params = ["(l.stage NOT IN ('won','lost') OR l.updated_at >= datetime('now', ?))"], [f"-{include_closed_days} days"]
+    where, params = ["(l.stage NOT IN ('won','lost') OR l.updated_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now', ?))"], [f"-{include_closed_days} days"]
     if mine or user["role"] == "sales":
         where.append("l.assigned_to = ?"); params.append(user["id"])
     return fetch_all(db, LEAD_SELECT + f" WHERE {' AND '.join(where)} ORDER BY l.stage, l.position, l.created_at DESC", params)

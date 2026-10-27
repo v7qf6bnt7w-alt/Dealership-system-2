@@ -98,7 +98,7 @@ def list_jobs(db: DB, user: StaffUser, status: str | None = None, include_closed
     if status:
         where.append("s.status = ?"); params.append(status)
     elif not include_closed:
-        where.append("(s.status NOT IN ('closed','cancelled') OR s.closed_at >= datetime('now','-7 days'))")
+        where.append("(s.status NOT IN ('closed','cancelled') OR s.closed_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-7 days'))")
     clause = f"WHERE {' AND '.join(where)}" if where else ""
     return fetch_all(db, f"{JOB_SELECT} {clause} ORDER BY s.scheduled_at LIMIT 500", params)
 
@@ -111,7 +111,7 @@ def get_job(job_id: int, db: DB, user: StaffUser):
 @router.post("/service/jobs", status_code=201)
 def create_job(body: JobIn, request: Request, db: DB, user: StaffUser):
     with transaction(db):
-        seq = db.execute("SELECT COUNT(*) + 1 AS n FROM service_jobs").fetchone()["n"]
+        seq = db.execute("SELECT COALESCE(MAX(id), 0) + 1 AS n FROM service_jobs").fetchone()["n"]
         jid = insert(db, "service_jobs", {**body.model_dump(), "ro_number": f"RO-{datetime.now():%y}{seq:05d}",
                                           "advisor_id": user["id"]})
         _recalc(db, jid)

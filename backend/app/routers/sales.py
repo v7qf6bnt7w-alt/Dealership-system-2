@@ -242,7 +242,7 @@ def create_deal(body: DealIn, request: Request, db: DB, user: SalesUser):
     if v["status"] == "sold":
         raise HTTPException(409, "Vehicle is already sold")
     with transaction(db):
-        seq = db.execute("SELECT COUNT(*) + 1 AS n FROM deals").fetchone()["n"]
+        seq = db.execute("SELECT COALESCE(MAX(id), 0) + 1 AS n FROM deals").fetchone()["n"]
         did = insert(db, "deals", {
             **body.model_dump(exclude={"fees", "accessories", "tax_rate"}),
             "deal_number": f"D-{datetime.now():%y%m}-{seq:04d}",

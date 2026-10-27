@@ -36,7 +36,7 @@ def dashboard(db: DB, user: StaffUser):
 
     monthly = fetch_all(db, f"""SELECT substr(delivered_at, 1, 7) AS month, COUNT(*) AS units, SUM(total_otd) AS revenue,
                                 SUM(gross_profit) AS gross FROM deals d WHERE d.status = 'delivered'
-                                AND d.delivered_at >= datetime('now', 'start of month', '-11 months') {rep_filter}
+                                AND d.delivered_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now', 'start of month', '-11 months') {rep_filter}
                                 GROUP BY month ORDER BY month""", rp)
 
     inventory = fetch_one(db, """SELECT COUNT(*) FILTER (WHERE status != 'sold') AS total_units,
@@ -47,8 +47,8 @@ def dashboard(db: DB, user: StaffUser):
         COALESCE(SUM(price) FILTER (WHERE status != 'sold'), 0) AS stock_value,
         COALESCE(SUM(cost) FILTER (WHERE status != 'sold'), 0) AS stock_cost,
         CAST(AVG(julianday('now') - julianday(acquired_at)) FILTER (WHERE status != 'sold') AS INTEGER) AS avg_days_in_stock,
-        CAST(AVG(julianday(sold_at) - julianday(acquired_at)) FILTER (WHERE status = 'sold' AND sold_at >= datetime('now','-90 days')) AS INTEGER) AS avg_days_to_sell,
-        COUNT(*) FILTER (WHERE status = 'sold' AND sold_at >= datetime('now','-365 days')) AS sold_12m FROM vehicles""")
+        CAST(AVG(julianday(sold_at) - julianday(acquired_at)) FILTER (WHERE status = 'sold' AND sold_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-90 days')) AS INTEGER) AS avg_days_to_sell,
+        COUNT(*) FILTER (WHERE status = 'sold' AND sold_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-365 days')) AS sold_12m FROM vehicles""")
     avg_stock = max(inventory["total_units"], 1)
     inventory["turnover_rate"] = round(inventory["sold_12m"] / avg_stock, 2)
 
@@ -63,7 +63,7 @@ def dashboard(db: DB, user: StaffUser):
     sources = fetch_all(db, f"SELECT source, COUNT(*) AS count, COUNT(*) FILTER (WHERE stage='won') AS won FROM leads {lead_scope} GROUP BY source ORDER BY count DESC", rp)
     leaderboard = fetch_all(db, """SELECT u.id, u.full_name, u.avatar_color, COUNT(d.id) AS units, COALESCE(SUM(d.total_otd),0) AS revenue,
                                    COALESCE(SUM(d.gross_profit),0) AS gross FROM users u
-                                   LEFT JOIN deals d ON d.sales_rep_id = u.id AND d.status = 'delivered' AND d.delivered_at >= datetime('now','-90 days')
+                                   LEFT JOIN deals d ON d.sales_rep_id = u.id AND d.status = 'delivered' AND d.delivered_at >= strftime('%Y-%m-%dT%H:%M:%SZ','now','-90 days')
                                    WHERE u.role = 'sales' AND u.is_active = 1 GROUP BY u.id ORDER BY revenue DESC""")
     service = fetch_one(db, """SELECT COUNT(*) FILTER (WHERE status NOT IN ('closed','cancelled')) AS open_jobs,
         COUNT(*) FILTER (WHERE status = 'ready') AS ready, COUNT(*) FILTER (WHERE status = 'waiting_parts') AS waiting_parts,

@@ -11,7 +11,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class LoginIn(BaseModel):
-    email: EmailStr
+    # Plain string on purpose: login is a lookup, so format validation would only
+    # reject legitimate internal domains with a confusing 422.
+    email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=1, max_length=128)
 
 
@@ -36,7 +38,7 @@ def _session(user: dict) -> dict:
 
 @router.post("/login")
 def login(body: LoginIn, request: Request, db: DB):
-    user = fetch_one(db, "SELECT * FROM users WHERE email = ?", (body.email,))
+    user = fetch_one(db, "SELECT * FROM users WHERE email = ?", (body.email.strip(),))
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
     if not user["is_active"]:
